@@ -22,6 +22,13 @@ using namespace glm;
 #include <glm/gtx/euler_angles.hpp>//rotation
 #include <glm/gtx/norm.hpp>//rotation
 
+void draw_background(std::vector<glm::vec3> vertices,std::vector<glm::vec2> uvs,std::vector<glm::vec3> normals,GLuint texture,GLuint textureID );
+GLuint programID;
+GLuint vertexPosition_modelspaceID;
+GLuint vertexUVID;
+GLuint vertexNormal_modelspaceID;
+GLuint LightID;
+
 int main( void )
 {
 	// Initialise GLFW
@@ -49,14 +56,14 @@ int main( void )
 		return -1;
 	}
 
-	glfwSetWindowTitle( "Lighting" );
+    glfwSetWindowTitle( "Throw Back" );
 
 	// Ensure we can capture the escape key being pressed below
 	glfwEnable( GLFW_STICKY_KEYS );
 	glfwSetMousePos(1024/2, 768/2);
 
 	// Dark blue background
-	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+    //glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
 	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
@@ -67,7 +74,7 @@ int main( void )
 	glEnable(GL_CULL_FACE);
 
 	// Create and compile our GLSL program from the shaders
-	GLuint programID = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
+    programID = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
 
 	// Get a handle for our "MVP" uniform
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
@@ -75,20 +82,21 @@ int main( void )
 	GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
 
 	// Get a handle for our buffers
-	GLuint vertexPosition_modelspaceID = glGetAttribLocation(programID, "vertexPosition_modelspace");
-	GLuint vertexUVID = glGetAttribLocation(programID, "vertexUV");
-	GLuint vertexNormal_modelspaceID = glGetAttribLocation(programID, "vertexNormal_modelspace");
+    vertexPosition_modelspaceID = glGetAttribLocation(programID, "vertexPosition_modelspace");
+    vertexUVID = glGetAttribLocation(programID, "vertexUV");
+    vertexNormal_modelspaceID = glGetAttribLocation(programID, "vertexNormal_modelspace");
 
 	// Load the texture
     GLuint Texture = loadBMP_custom("Tank/tank.bmp");
+    GLuint BG_Texture = loadBMP_custom("BG1.bmp");
 	
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
 
 	// Read our .obj file
-	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec2> uvs;
-	std::vector<glm::vec3> normals;
+    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec2> uvs;
+    std::vector<glm::vec3> normals;
     bool res = loadOBJ("Tank/tank.obj", vertices, uvs, normals);
 
 	// Load it into a VBO
@@ -110,8 +118,13 @@ int main( void )
 
 	// Get a handle for our "LightPosition" uniform
 	glUseProgram(programID);
-	GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");// bashawer 3ala el variable
+    LightID = glGetUniformLocation(programID, "LightPosition_worldspace");// bashawer 3ala el variable
     // LightPosition_worldspace elly fel shader
+
+    std::vector<glm::vec3> BG_vertices;
+    std::vector<glm::vec2> BG_uvs;
+    std::vector<glm::vec3> BG_normals;
+    loadOBJ("square.obj", BG_vertices, BG_uvs, BG_normals);
 
 	do{
 
@@ -119,8 +132,8 @@ int main( void )
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Use our shader
-		glUseProgram(programID);
-
+        glUseProgram(programID);
+    draw_background(BG_vertices, BG_uvs, BG_normals,BG_Texture, TextureID);
         // Compute the MVP matrix from keyboard and mouse input
         //computeMatricesFromInputs();
         //glm::mat4 ProjectionMatrix = getProjectionMatrix();
@@ -134,7 +147,7 @@ int main( void )
                                                                 glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
                     );
         glm::mat4 RotationMatrix1 = eulerAngleYXZ(1.80f, 0.0f,0.0f);
-        glm::mat4 TranslationMatrix1 = translate(mat4(), vec3(-15,-10,0));
+        glm::mat4 TranslationMatrix1 = translate(mat4(), vec3(-15,-12,0));
         glm::mat4 ScalingMatrix1 = scale(mat4(), vec3(0.70f, 0.7f, 0.7f));
         glm::mat4 Model1 = TranslationMatrix1*RotationMatrix1*ScalingMatrix1;
 
@@ -146,8 +159,8 @@ int main( void )
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &Model1[0][0]);
         glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &View1[0][0]);
 
-        glm::vec3 lightPos = glm::vec3(0,-5,20); // position of the light source
-		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+        glm::vec3 lightPos = glm::vec3(-15,0,0); // position of the light source
+        glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 
         // Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
@@ -209,7 +222,7 @@ int main( void )
                                                                 glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
                     );
         glm::mat4 RotationMatrix2 = eulerAngleYXZ(-1.80f, 0.0f,0.0f);
-        glm::mat4 TranslationMatrix2 = translate(mat4(), vec3(15,-10,0));
+        glm::mat4 TranslationMatrix2 = translate(mat4(), vec3(15,-12,0));
         glm::mat4 ScalingMatrix2 = scale(mat4(), vec3(0.70f, 0.7f, 0.7f));
         glm::mat4 Model2 = TranslationMatrix2*RotationMatrix2*ScalingMatrix2;
 
@@ -221,7 +234,7 @@ int main( void )
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &Model2[0][0]);
         glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &View2[0][0]);
 
-        //glm::vec3 lightPos = glm::vec3(4,4,4); // position of the light source
+        lightPos = glm::vec3(15,0,0); // position of the light source
         glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 
         // Bind our texture in Texture Unit 0
@@ -273,7 +286,8 @@ int main( void )
         glDisableVertexAttribArray(vertexUVID);
         glDisableVertexAttribArray(vertexNormal_modelspaceID);
 
-		// Swap buffers
+
+        // Swap buffers
 		glfwSwapBuffers();
 
 	} // Check if the ESC key was pressed or the window was closed
@@ -293,3 +307,103 @@ int main( void )
 	return 0;
 }
 
+void draw_background(std::vector<glm::vec3> vertices,std::vector<glm::vec2> uvs,std::vector<glm::vec3> normals,GLuint texture,GLuint textureID )
+{
+    //std::vector<glm::vec3> vertices;
+    //std::vector<glm::vec2> uvs;
+    //std::vector<glm::vec3> normals;
+
+    GLuint vertexbuffer;
+    // Load it into a VBO
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+
+    GLuint uvbuffer;
+    glGenBuffers(1, &uvbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
+
+    GLuint normalbuffer;
+    glGenBuffers(1, &normalbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+
+    glm::mat4 Projection3 = glm::perspective(90.0f, 4.0f / 3.0f, 0.1f, 100.0f);
+    // Camera matrix
+    glm::mat4 View3       = glm::lookAt(
+                                                            glm::vec3(0,0,20),
+                                                            glm::vec3(0,0,0), // and looks at the origin
+                                                            glm::vec3(0,-1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+                );
+    glm::mat4 RotationMatrix3 = eulerAngleYXZ(0.0f, 0.0f,0.0f);
+    glm::mat4 TranslationMatrix3 = translate(mat4(), vec3(0,0,0));
+    glm::mat4 ScalingMatrix3 = scale(mat4(), vec3(30.0f, 20.0f, 20.0f));
+    glm::mat4 Model3 = TranslationMatrix3*RotationMatrix3*ScalingMatrix3;
+
+    glm::mat4 MVP = Projection3 * View3 * Model3;
+
+    // Send our transformation to the currently bound shader,
+    // in the "MVP" uniform
+
+    // Get a handle for our "MVP" uniform
+    GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+    GLuint ViewMatrixID = glGetUniformLocation(programID, "V");
+    GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
+    glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+    glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &Model3[0][0]);
+    glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &View3[0][0]);
+
+    glm::vec3 lightPos = glm::vec3(0,5,6); // position of the light source
+    glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+
+    // Bind our texture in Texture Unit 0
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    // Set our "myTextureSampler" sampler to user Texture Unit 0
+    glUniform1i(textureID, 0);
+
+    // 1rst attribute buffer : vertices
+    glEnableVertexAttribArray(vertexPosition_modelspaceID);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glVertexAttribPointer(
+        vertexPosition_modelspaceID,  // The attribute we want to configure
+        3,                            // size
+        GL_FLOAT,                     // type
+        GL_FALSE,                     // normalized?
+        0,                            // stride
+        (void*)0                      // array buffer offset
+    );
+
+    // 2nd attribute buffer : UVs
+    glEnableVertexAttribArray(vertexUVID);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glVertexAttribPointer(
+        vertexUVID,                   // The attribute we want to configure
+        2,                            // size : U+V => 2
+        GL_FLOAT,                     // type
+        GL_FALSE,                     // normalized?
+        0,                            // stride
+        (void*)0                      // array buffer offset
+    );
+
+    // 3rd attribute buffer : normals
+    glEnableVertexAttribArray(vertexNormal_modelspaceID);
+    glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+    glVertexAttribPointer(
+        vertexNormal_modelspaceID,    // The attribute we want to configure
+        3,                            // size
+        GL_FLOAT,                     // type
+        GL_FALSE,                     // normalized?
+        0,                            // stride
+        (void*)0                      // array buffer offset
+    );
+
+    // Draw the triangles !
+    glDrawArrays(GL_TRIANGLES, 0, vertices.size() );
+
+    glDisableVertexAttribArray(vertexPosition_modelspaceID);
+    glDisableVertexAttribArray(vertexUVID);
+    glDisableVertexAttribArray(vertexNormal_modelspaceID);
+
+}
