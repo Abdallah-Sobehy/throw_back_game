@@ -1,0 +1,22 @@
+#	OBJ Files/square.obj : 4 vertices, 4 normals, 2 faces.
+#	Range : [-1.0, -1.0, 0] -> [1.0, 1.0, 0.0]
+#	Span : (2.0, 2.0, 0.0)
+# v (vertiex 3D coordinates)
+# vt (mapping each vertex to vertext to texture coordinate [0-1])
+# vn Normal at each vertex
+# f Faces are defined using lists of vertex, texture and normal indices.
+# f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
+v -1.000000 -1.000000 0.000000
+v 1.000000 -1.000000 0.0000000
+v 1.000000 1.000000 0.000000
+v -1.000000 1.000000 0.000000
+vt 0.000000 0.00000 0.000000
+vt 1.000000 0.000000 0.000000
+vt 1.000000 1.000000 0.000000
+vt 0.000000 1.000000 0.000000
+vn 0.000000 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+f 1/1/1 2/2/2 3/3/3
+f 1/1/1 3/3/3 4/4/4
