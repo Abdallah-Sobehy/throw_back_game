@@ -27,10 +27,13 @@
 #define RIGHT_TANK_X 15
 #define TANK_Y -12
 #define TANK_STEP 0.2
+#define PROJECTILE_TANK_Y_DIFF 2.5
+#define PROJECTILE_TANK_X_DIFF 3.4
 #define PROJECTILE_Y (TANK_Y+2.5)
-#define PROJECTILE_Z 0.4
-#define LEFT_TANK_PROJECTILE_X (RIGHT_TANK_X+3.4)
+#define PROJECTILE_Z -0.4
+#define LEFT_TANK_PROJECTILE_X (LEFT_TANK_X+3.4)
 #define RIGHT_TANK_PROJECTILE_X (RIGHT_TANK_X-3.4)
+#define PROJECTILE_STEP 0.6
 
 using namespace glm;
 
@@ -69,38 +72,6 @@ float projectile_scale = 0.7;
 char * turn = "right";
 
 void draw_object(std::vector<glm::vec3> vertices,std::vector<glm::vec2> uvs,std::vector<glm::vec3> normals,GLuint texture_bmp,GLuint textureID,glm::mat4 view, glm::mat4 model, vec3 lightPos);
-void fire(char* turn, float miss_distance);
-void fire(char* turn, float miss_distance)
-{
-    float step_x;
-    float step_y = 0.2;// projectile starts by moving up
-    float radius = fabs(r_tank_x-l_tank_x+miss_distance)/2;
-    int count =0;
-    if (turn == "right")// if right tanks is shooting projectile will move left
-        step_x = -0.2;
-    else step_x = 0.2;
-    do
-    {
-        projectile_x += step_x;
-        projectile_y += step_x;
-//        if(step_x*count < radius)
-//        {
-//            projectile_y += sqrt(radius-step_x*step_x);
-//        }
-//        else projectile_y -= sqrt(radius-step_x*step_x);
-
-        tmp_view = glm::lookAt(glm::vec3(0,0,20), glm::vec3(0,0,0),glm::vec3(0,1,0));
-        tmp_rotation = eulerAngleYXZ(0.0f, 0.0f,0.0f);
-        tmp_translation = translate(mat4(), vec3(projectile_x,projectile_y,projectile_z));
-        tmp_scaling = scale(mat4(), vec3(projectile_scale, projectile_scale, projectile_scale));
-        tmp_model = tmp_translation*tmp_rotation*tmp_scaling;
-        tmp_light_pos = glm::vec3(projectile_x,projectile_y,10);
-        draw_object(fire_vertices, fire_uvs, fire_normals,fire_Texture,TextureID,tmp_view,tmp_model,tmp_light_pos);
-        count ++;
-        sleep(3);
-    }while(false);//while(projectile_y> PROJECTILE_Y - fabs(step_y))// while the ball did not return to its level keep walking on curve
-
-}
 
 int main( void ) {
 
@@ -160,8 +131,7 @@ int main( void ) {
 
     // Get a handle for our "LightPosition" uniform
     glUseProgram(programID);
-    LightID = glGetUniformLocation(programID, "LightPosition_worldspace");// bashawer 3ala el variable
-    // LightPosition_worldspace elly fel shader
+    LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
 
     std::vector<glm::vec3> BG_vertices;
     std::vector<glm::vec2> BG_uvs;
@@ -169,6 +139,11 @@ int main( void ) {
     loadOBJ("square.obj", BG_vertices, BG_uvs, BG_normals);
 
     loadOBJ("fire.obj", fire_vertices, fire_uvs, fire_normals);
+
+    // indicates the state of the projectile (wither loaded in one of the tanks or flying
+    bool projectile_flying = false;
+    float projectile_end_x, projectile_midpt_x,projectile_step_x;
+    float projectile_half_dist_x;
 
     do {
 
@@ -178,14 +153,14 @@ int main( void ) {
         // Use our shader
         glUseProgram(programID);
 
-        if (glfwGetKey( GLFW_KEY_LEFT) ==GLFW_PRESS ) //left arrow is pressed
+        if (glfwGetKey( GLFW_KEY_LEFT) ==GLFW_PRESS && !projectile_flying) //left arrow is pressed
         {
             if(turn=="right")
                 r_tank_x-=move_step;
             else
                 l_tank_x-=move_step;
         }
-        else if (glfwGetKey( GLFW_KEY_RIGHT) ==GLFW_PRESS )
+        else if (glfwGetKey( GLFW_KEY_RIGHT) ==GLFW_PRESS && !projectile_flying)
         {
             if(turn == "right")
                 r_tank_x+=move_step;
@@ -193,13 +168,26 @@ int main( void ) {
                 l_tank_x+=move_step;
         }
         // if space fire, second condition to ensure the press is detected once
-        else if (glfwGetKey( GLFW_KEY_SPACE) == GLFW_PRESS && glfwGetKey( GLFW_KEY_SPACE) == GLFW_RELEASE)
+        else if (glfwGetKey( GLFW_KEY_SPACE) == GLFW_PRESS && glfwGetKey( GLFW_KEY_SPACE) == GLFW_RELEASE && !projectile_flying)
         {
             //fire(turn,0);
+            projectile_flying = true;
             if(turn == "right") // switch turns
+            {
+                // set projectile end point
+                projectile_end_x = l_tank_x;
+                projectile_step_x=-PROJECTILE_STEP;
                 turn = "left";
-            else turn = "right";
-            fprintf(stderr,"fire pressed\n");
+            }
+            else {// left turn
+                projectile_end_x = r_tank_x;
+                projectile_step_x=PROJECTILE_STEP;
+                turn = "right";
+            }
+            projectile_midpt_x = (projectile_end_x+projectile_x)/2;
+            projectile_half_dist_x = fabs(projectile_x-projectile_end_x)/2;
+            fprintf(stderr,"projectile x = %f , projectile end x =  %f, circle origin = %f, radius = %f\n",projectile_x,projectile_end_x,projectile_midpt_x,projectile_half_dist_x);
+            //fprintf(stderr,"fire pressed\n");
             //sleep(2);// to avoid counting to clicks
         }
 
@@ -213,11 +201,33 @@ int main( void ) {
         draw_object(BG_vertices, BG_uvs, BG_normals,BG_Texture,TextureID,tmp_view,tmp_model,tmp_light_pos);
 
         // projectile
-        if (turn == "right"){
-            projectile_x = r_tank_x-3.4; projectile_y = tank_y+2.5; projectile_z=-0.4;
+        if( !projectile_flying)
+        {
+            if (turn == "right"){
+                projectile_x = r_tank_x-3.4; projectile_y = PROJECTILE_Y; projectile_z=PROJECTILE_Z;
+            }
+            else{
+                projectile_x = l_tank_x+3.4; projectile_y = PROJECTILE_Y; projectile_z=PROJECTILE_Z;
+            }
         }
-        else{
-            projectile_x = l_tank_x+3.4; projectile_y = tank_y+2.5; projectile_z=-0.4;
+        else if (projectile_flying) // compute next position in the projectile motion
+        {
+            // flying stopping condition
+            if ((turn == "right" && projectile_x>=projectile_end_x)|| (turn=="left" &&projectile_x<=projectile_end_x))
+            {
+                projectile_flying=false;
+            }
+            else
+            {
+                // horizontal step adjusted to be fastest near firing sport and slowest near mid-way
+                // The speed is linearly adjusted from fastest to lowest then fastest
+                // The maximum speed difference is (projectile_step/num)
+                projectile_x+=projectile_step_x+fabs(projectile_midpt_x-projectile_x)/projectile_half_dist_x*(projectile_step_x/4);
+                projectile_y = -(projectile_x-r_tank_x)*(projectile_x-l_tank_x);
+                projectile_y/=fabs(r_tank_x-l_tank_x);
+                projectile_y+=TANK_Y;
+            }
+
         }
         tmp_view = glm::lookAt(glm::vec3(0,0,20), glm::vec3(0,0,0),glm::vec3(0,1,0));
         tmp_rotation = eulerAngleYXZ(0.0f, 0.0f,0.0f);
