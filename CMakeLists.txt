@@ -46,6 +46,8 @@ add_definitions(
 # throw_back
 add_executable(throw_back
 	throw_back/throw_back.cpp
+        common/throw_back_fns.cpp
+        common/throw_back_fns.hpp
 	common/shader.cpp
 	common/shader.hpp
 	common/controls.cpp
