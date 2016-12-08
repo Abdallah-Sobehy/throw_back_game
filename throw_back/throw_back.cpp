@@ -23,6 +23,15 @@
 #include <glm/gtx/euler_angles.hpp>//rotation
 #include <glm/gtx/norm.hpp>//rotation
 
+#define LEFT_TANK_X -15
+#define RIGHT_TANK_X 15
+#define TANK_Y -12
+#define TANK_STEP 0.2
+#define PROJECTILE_Y (TANK_Y+2.5)
+#define PROJECTILE_Z 0.4
+#define LEFT_TANK_PROJECTILE_X (RIGHT_TANK_X+3.4)
+#define RIGHT_TANK_PROJECTILE_X (RIGHT_TANK_X-3.4)
+
 using namespace glm;
 
 GLuint programID;
@@ -30,6 +39,7 @@ GLuint vertexPosition_modelspaceID;
 GLuint vertexUVID;
 GLuint vertexNormal_modelspaceID;
 GLuint LightID;
+GLuint TextureID; 
 
 GLuint MatrixID;
 GLuint ViewMatrixID;
@@ -37,7 +47,60 @@ GLuint ModelMatrixID;
 
 glm::mat4 Projection;
 
+glm::mat4 tmp_view;
+glm::mat4 tmp_rotation;
+glm::mat4 tmp_translation;
+glm::mat4 tmp_scaling ;
+glm::mat4 tmp_model;
+vec3 tmp_light_pos;
+
+GLuint fire_Texture;
+std::vector<glm::vec3> fire_vertices;
+std::vector<glm::vec2> fire_uvs;
+std::vector<glm::vec3> fire_normals;
+
+float tank_y = TANK_Y;
+float r_tank_x = RIGHT_TANK_X;
+float l_tank_x = LEFT_TANK_X;
+float move_step = TANK_STEP;
+
+float projectile_x = RIGHT_TANK_PROJECTILE_X, projectile_y = PROJECTILE_Y, projectile_z=PROJECTILE_Z;
+float projectile_scale = 0.7;
+char * turn = "right";
+
 void draw_object(std::vector<glm::vec3> vertices,std::vector<glm::vec2> uvs,std::vector<glm::vec3> normals,GLuint texture_bmp,GLuint textureID,glm::mat4 view, glm::mat4 model, vec3 lightPos);
+void fire(char* turn, float miss_distance);
+void fire(char* turn, float miss_distance)
+{
+    float step_x;
+    float step_y = 0.2;// projectile starts by moving up
+    float radius = fabs(r_tank_x-l_tank_x+miss_distance)/2;
+    int count =0;
+    if (turn == "right")// if right tanks is shooting projectile will move left
+        step_x = -0.2;
+    else step_x = 0.2;
+    do
+    {
+        projectile_x += step_x;
+        projectile_y += step_x;
+//        if(step_x*count < radius)
+//        {
+//            projectile_y += sqrt(radius-step_x*step_x);
+//        }
+//        else projectile_y -= sqrt(radius-step_x*step_x);
+
+        tmp_view = glm::lookAt(glm::vec3(0,0,20), glm::vec3(0,0,0),glm::vec3(0,1,0));
+        tmp_rotation = eulerAngleYXZ(0.0f, 0.0f,0.0f);
+        tmp_translation = translate(mat4(), vec3(projectile_x,projectile_y,projectile_z));
+        tmp_scaling = scale(mat4(), vec3(projectile_scale, projectile_scale, projectile_scale));
+        tmp_model = tmp_translation*tmp_rotation*tmp_scaling;
+        tmp_light_pos = glm::vec3(projectile_x,projectile_y,10);
+        draw_object(fire_vertices, fire_uvs, fire_normals,fire_Texture,TextureID,tmp_view,tmp_model,tmp_light_pos);
+        count ++;
+        sleep(3);
+    }while(false);//while(projectile_y> PROJECTILE_Y - fabs(step_y))// while the ball did not return to its level keep walking on curve
+
+}
 
 int main( void ) {
 
@@ -66,11 +129,11 @@ int main( void ) {
     // Load the texture
     GLuint tank_Texture = loadBMP_custom("Tank/tank.bmp");
     GLuint BG_Texture = loadBMP_custom("BG1.bmp");
-    GLuint fire_Texture = loadBMP_custom("fire.bmp");
+    fire_Texture = loadBMP_custom("fire.bmp");
     GLuint healthBar_texture= loadBMP_custom("green.bmp");
 
     // Get a handle for our "myTextureSampler" uniform
-    GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
+    TextureID  = glGetUniformLocation(programID, "myTextureSampler");
 
     // Read our .obj file
     std::vector<glm::vec3> tank_vertices;
@@ -105,23 +168,7 @@ int main( void ) {
     std::vector<glm::vec3> BG_normals;
     loadOBJ("square.obj", BG_vertices, BG_uvs, BG_normals);
 
-    std::vector<glm::vec3> fire_vertices;
-    std::vector<glm::vec2> fire_uvs;
-    std::vector<glm::vec3> fire_normals;
     loadOBJ("fire.obj", fire_vertices, fire_uvs, fire_normals);
-
-    glm::mat4 tmp_view;
-    glm::mat4 tmp_rotation;
-    glm::mat4 tmp_translation;
-    glm::mat4 tmp_scaling ;
-    glm::mat4 tmp_model;
-    vec3 tmp_light_pos;
-
-    float r_tank_x = 15;
-    float l_tank_x = -15;
-    float move_step = 0.2;
-    float projectile_x = -12, projectile_y = -6;
-
 
     do {
 
@@ -133,11 +180,27 @@ int main( void ) {
 
         if (glfwGetKey( GLFW_KEY_LEFT) ==GLFW_PRESS ) //left arrow is pressed
         {
-            l_tank_x-=move_step; r_tank_x-=move_step;
+            if(turn=="right")
+                r_tank_x-=move_step;
+            else
+                l_tank_x-=move_step;
         }
         else if (glfwGetKey( GLFW_KEY_RIGHT) ==GLFW_PRESS )
         {
-            l_tank_x+=move_step; r_tank_x+=move_step;
+            if(turn == "right")
+                r_tank_x+=move_step;
+            else
+                l_tank_x+=move_step;
+        }
+        // if space fire, second condition to ensure the press is detected once
+        else if (glfwGetKey( GLFW_KEY_SPACE) == GLFW_PRESS && glfwGetKey( GLFW_KEY_SPACE) == GLFW_RELEASE)
+        {
+            //fire(turn,0);
+            if(turn == "right") // switch turns
+                turn = "left";
+            else turn = "right";
+            fprintf(stderr,"fire pressed\n");
+            //sleep(2);// to avoid counting to clicks
         }
 
         // background
@@ -150,10 +213,16 @@ int main( void ) {
         draw_object(BG_vertices, BG_uvs, BG_normals,BG_Texture,TextureID,tmp_view,tmp_model,tmp_light_pos);
 
         // projectile
+        if (turn == "right"){
+            projectile_x = r_tank_x-3.4; projectile_y = tank_y+2.5; projectile_z=-0.4;
+        }
+        else{
+            projectile_x = l_tank_x+3.4; projectile_y = tank_y+2.5; projectile_z=-0.4;
+        }
         tmp_view = glm::lookAt(glm::vec3(0,0,20), glm::vec3(0,0,0),glm::vec3(0,1,0));
         tmp_rotation = eulerAngleYXZ(0.0f, 0.0f,0.0f);
-        tmp_translation = translate(mat4(), vec3(projectile_x,projectile_y,0));
-        tmp_scaling = scale(mat4(), vec3(0.7, 0.7, 0.7));
+        tmp_translation = translate(mat4(), vec3(projectile_x,projectile_y,projectile_z));
+        tmp_scaling = scale(mat4(), vec3(projectile_scale, projectile_scale, projectile_scale));
         tmp_model = tmp_translation*tmp_rotation*tmp_scaling;
         tmp_light_pos = glm::vec3(projectile_x,projectile_y,10);
         draw_object(fire_vertices, fire_uvs, fire_normals,fire_Texture,TextureID,tmp_view,tmp_model,tmp_light_pos);
@@ -161,7 +230,7 @@ int main( void ) {
         // Left tank
         tmp_view = glm::lookAt(glm::vec3(0,0,20),glm::vec3(0,0,0), glm::vec3(0,1,0));
         tmp_rotation = eulerAngleYXZ(1.65f, 0.0f,0.0f);
-        tmp_translation = translate(mat4(), vec3(l_tank_x,-12,0));
+        tmp_translation = translate(mat4(), vec3(l_tank_x,tank_y,0));
         tmp_scaling = scale(mat4(), vec3(0.70f, 0.7f, 0.7f));
         tmp_model = tmp_translation*tmp_rotation*tmp_scaling;
         tmp_light_pos = glm::vec3(l_tank_x,0,0);
@@ -180,7 +249,7 @@ int main( void ) {
         // right tank
         tmp_view = glm::lookAt(glm::vec3(0,0,20),glm::vec3(0,0,0), glm::vec3(0,1,0));
         tmp_rotation = eulerAngleYXZ(-1.65f, 0.0f,0.0f);
-        tmp_translation = translate(mat4(), vec3(r_tank_x,-12,0));
+        tmp_translation = translate(mat4(), vec3(r_tank_x,tank_y,0));
         tmp_scaling = scale(mat4(), vec3(0.70f, 0.7f, 0.7f));
         tmp_model = tmp_translation*tmp_rotation*tmp_scaling;
         tmp_light_pos = glm::vec3(r_tank_x,0,0);
