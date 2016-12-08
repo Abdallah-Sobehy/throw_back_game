@@ -33,7 +33,7 @@
 #define PROJECTILE_Z -0.4
 #define LEFT_TANK_PROJECTILE_X (LEFT_TANK_X+3.4)
 #define RIGHT_TANK_PROJECTILE_X (RIGHT_TANK_X-3.4)
-#define PROJECTILE_STEP 0.4
+#define PROJECTILE_STEP 0.6
 
 using namespace glm;
 
@@ -142,8 +142,8 @@ int main( void ) {
 
     // indicates the state of the projectile (wither loaded in one of the tanks or flying
     bool projectile_flying = false;
-    float projectile_end_x, projectile_origin_x,projectile_step_x;
-    float projectile_radius;
+    float projectile_end_x, projectile_midpt_x,projectile_step_x;
+    float projectile_half_dist_x;
 
     do {
 
@@ -184,9 +184,9 @@ int main( void ) {
                 projectile_step_x=PROJECTILE_STEP;
                 turn = "right";
             }
-            projectile_origin_x = (projectile_end_x+projectile_x)/2;
-            projectile_radius = fabs(projectile_x-projectile_end_x)/2;
-            fprintf(stderr,"projectile x = %f , projectile end x =  %f, circle origin = %f, radius = %f\n",projectile_x,projectile_end_x,projectile_origin_x,projectile_radius);
+            projectile_midpt_x = (projectile_end_x+projectile_x)/2;
+            projectile_half_dist_x = fabs(projectile_x-projectile_end_x)/2;
+            fprintf(stderr,"projectile x = %f , projectile end x =  %f, circle origin = %f, radius = %f\n",projectile_x,projectile_end_x,projectile_midpt_x,projectile_half_dist_x);
             //fprintf(stderr,"fire pressed\n");
             //sleep(2);// to avoid counting to clicks
         }
@@ -219,8 +219,13 @@ int main( void ) {
             }
             else
             {
-                projectile_x+=projectile_step_x;
-                projectile_y = sqrt(projectile_radius*projectile_radius - (projectile_x-projectile_origin_x)*(projectile_x-projectile_origin_x)) + PROJECTILE_Y;
+                // horizontal step adjusted to be fastest near firing sport and slowest near mid-way
+                // The speed is linearly adjusted from fastest to lowest then fastest
+                // The maximum speed difference is (projectile_step/num)
+                projectile_x+=projectile_step_x+fabs(projectile_midpt_x-projectile_x)/projectile_half_dist_x*(projectile_step_x/4);
+                projectile_y = -(projectile_x-r_tank_x)*(projectile_x-l_tank_x);
+                projectile_y/=fabs(r_tank_x-l_tank_x);
+                projectile_y+=TANK_Y;
             }
 
         }
