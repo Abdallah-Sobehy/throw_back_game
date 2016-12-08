@@ -119,7 +119,8 @@ int main( void ) {
 
     float r_tank_x = 15;
     float l_tank_x = -15;
-    float projectile_x, projectile_y;
+    float move_step = 0.2;
+    float projectile_x = -12, projectile_y = -6;
 
 
     do {
@@ -129,6 +130,16 @@ int main( void ) {
 
         // Use our shader
         glUseProgram(programID);
+
+        if (glfwGetKey( GLFW_KEY_LEFT) ==GLFW_PRESS ) //left arrow is pressed
+        {
+            l_tank_x-=move_step; r_tank_x-=move_step;
+        }
+        else if (glfwGetKey( GLFW_KEY_RIGHT) ==GLFW_PRESS )
+        {
+            l_tank_x+=move_step; r_tank_x+=move_step;
+        }
+
         // background
         tmp_view = glm::lookAt(glm::vec3(0,0,20), glm::vec3(0,0,0),glm::vec3(0,-1,0));
         tmp_rotation = eulerAngleYXZ(0.0f, 0.0f,0.0f);
@@ -141,14 +152,13 @@ int main( void ) {
         // projectile
         tmp_view = glm::lookAt(glm::vec3(0,0,20), glm::vec3(0,0,0),glm::vec3(0,1,0));
         tmp_rotation = eulerAngleYXZ(0.0f, 0.0f,0.0f);
-        tmp_translation = translate(mat4(), vec3(-6,-6,0));
+        tmp_translation = translate(mat4(), vec3(projectile_x,projectile_y,0));
         tmp_scaling = scale(mat4(), vec3(0.7, 0.7, 0.7));
         tmp_model = tmp_translation*tmp_rotation*tmp_scaling;
-        tmp_light_pos = glm::vec3(0,-5,6);
+        tmp_light_pos = glm::vec3(projectile_x,projectile_y,10);
         draw_object(fire_vertices, fire_uvs, fire_normals,fire_Texture,TextureID,tmp_view,tmp_model,tmp_light_pos);
 
         // Left tank
-        l_tank_x += 0.2;
         tmp_view = glm::lookAt(glm::vec3(0,0,20),glm::vec3(0,0,0), glm::vec3(0,1,0));
         tmp_rotation = eulerAngleYXZ(1.65f, 0.0f,0.0f);
         tmp_translation = translate(mat4(), vec3(l_tank_x,-12,0));
@@ -168,7 +178,6 @@ int main( void ) {
 
 
         // right tank
-        r_tank_x -= 0.2;
         tmp_view = glm::lookAt(glm::vec3(0,0,20),glm::vec3(0,0,0), glm::vec3(0,1,0));
         tmp_rotation = eulerAngleYXZ(-1.65f, 0.0f,0.0f);
         tmp_translation = translate(mat4(), vec3(r_tank_x,-12,0));
@@ -186,7 +195,7 @@ int main( void ) {
         tmp_light_pos = glm::vec3(r_tank_x,-5.5,10);
         draw_object(BG_vertices, BG_uvs, BG_normals,healthBar_texture,TextureID,tmp_view,tmp_model,tmp_light_pos);
 
-        sleep(0.3);
+        //sleep(0.3);
         // Swap buffers
         glfwSwapBuffers();
 
