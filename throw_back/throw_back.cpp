@@ -27,9 +27,11 @@
 #define RIGHT_TANK_X 15
 #define TANK_Y -12
 #define TANK_STEP 0.2
+#define PROJECTILE_TANK_Y_DIFF 2.5
+#define PROJECTILE_TANK_X_DIFF 3.4
 #define PROJECTILE_Y (TANK_Y+2.5)
-#define PROJECTILE_Z 0.4
-#define LEFT_TANK_PROJECTILE_X (RIGHT_TANK_X+3.4)
+#define PROJECTILE_Z -0.4
+#define LEFT_TANK_PROJECTILE_X (LEFT_TANK_X+3.4)
 #define RIGHT_TANK_PROJECTILE_X (RIGHT_TANK_X-3.4)
 #define PROJECTILE_STEP 0.4
 
@@ -183,7 +185,7 @@ int main( void ) {
                 turn = "right";
             }
             projectile_origin_x = (projectile_end_x+projectile_x)/2;
-            projectile_radius = fabs(projectile_x-projectile_end_x);
+            projectile_radius = fabs(projectile_x-projectile_end_x)/2;
             fprintf(stderr,"projectile x = %f , projectile end x =  %f, circle origin = %f, radius = %f\n",projectile_x,projectile_end_x,projectile_origin_x,projectile_radius);
             //fprintf(stderr,"fire pressed\n");
             //sleep(2);// to avoid counting to clicks
@@ -202,10 +204,10 @@ int main( void ) {
         if( !projectile_flying)
         {
             if (turn == "right"){
-                projectile_x = r_tank_x-3.4; projectile_y = tank_y+2.5; projectile_z=-0.4;
+                projectile_x = r_tank_x-3.4; projectile_y = PROJECTILE_Y; projectile_z=PROJECTILE_Z;
             }
             else{
-                projectile_x = l_tank_x+3.4; projectile_y = tank_y+2.5; projectile_z=-0.4;
+                projectile_x = l_tank_x+3.4; projectile_y = PROJECTILE_Y; projectile_z=PROJECTILE_Z;
             }
         }
         else if (projectile_flying) // compute next position in the projectile motion
@@ -218,7 +220,7 @@ int main( void ) {
             else
             {
                 projectile_x+=projectile_step_x;
-                projectile_y = sqrt(projectile_radius*projectile_radius - (projectile_x-projectile_origin_x)*(projectile_x-projectile_origin_x)) + PROJECTILE_Y-23;
+                projectile_y = sqrt(projectile_radius*projectile_radius - (projectile_x-projectile_origin_x)*(projectile_x-projectile_origin_x)) + PROJECTILE_Y;
             }
 
         }
