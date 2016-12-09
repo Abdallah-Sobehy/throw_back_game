@@ -33,7 +33,7 @@
 #define PROJECTILE_Z -0.4
 #define LEFT_TANK_PROJECTILE_X (LEFT_TANK_X+3.4)
 #define RIGHT_TANK_PROJECTILE_X (RIGHT_TANK_X-3.4)
-#define PROJECTILE_STEP 0.6
+#define PROJECTILE_STEP 0.5
 
 using namespace glm;
 
@@ -70,6 +70,7 @@ float move_step = TANK_STEP;
 float projectile_x = RIGHT_TANK_PROJECTILE_X, projectile_y = PROJECTILE_Y, projectile_z=PROJECTILE_Z;
 float projectile_scale = 0.7;
 char * turn = "right";
+bool just_fired = false;
 
 void draw_object(std::vector<glm::vec3> vertices,std::vector<glm::vec2> uvs,std::vector<glm::vec3> normals,GLuint texture_bmp,GLuint textureID,glm::mat4 view, glm::mat4 model, vec3 lightPos);
 
@@ -144,7 +145,8 @@ int main( void ) {
     bool projectile_flying = false;
     float projectile_end_x, projectile_start_x, projectile_midpt_x,projectile_step_x;
     float projectile_half_dist_x;
-    float projectile_angle_param=1;// gets more steeper towards 0
+    float projectile_angle_param;
+    float shift_y;
 
     do {
 
@@ -172,17 +174,19 @@ int main( void ) {
         else if (glfwGetKey( GLFW_KEY_SPACE) == GLFW_PRESS && glfwGetKey( GLFW_KEY_SPACE) == GLFW_RELEASE && !projectile_flying)
         {
             //fire(turn,0);
+            // Adjust angle_param based on user choice
+           projectile_angle_param=0.5;// gets more steeper towards 0
             projectile_flying = true;
             if(turn == "right") // switch turns
             {
                 // set projectile end point
-                projectile_start_x = r_tank_x;
+                projectile_start_x = r_tank_x-PROJECTILE_TANK_X_DIFF;
                 projectile_end_x = l_tank_x; // setting the end point of the projectile
                 projectile_step_x=-PROJECTILE_STEP;
                 turn = "left";
             }
             else {// left turn
-                projectile_start_x = l_tank_x;
+                projectile_start_x = l_tank_x+PROJECTILE_TANK_X_DIFF;
                 projectile_end_x = r_tank_x;
                 projectile_step_x=PROJECTILE_STEP;
                 turn = "right";
@@ -190,6 +194,7 @@ int main( void ) {
             projectile_midpt_x = (projectile_end_x+projectile_start_x)/2;
             projectile_half_dist_x = fabs(projectile_start_x-projectile_end_x)/2;
             fprintf(stderr,"projectile x = %f , projectile end x =  %f, circle origin = %f, radius = %f\n",projectile_x,projectile_end_x,projectile_midpt_x,projectile_half_dist_x);
+            just_fired =true;
             //fprintf(stderr,"fire pressed\n");
             //sleep(2);// to avoid counting to clicks
         }
@@ -223,6 +228,7 @@ int main( void ) {
             }
             else
             {
+
                 // horizontal step adjusted to be fastest near firing sport and slowest near mid-way
                 // The speed is linearly adjusted from fastest to lowest then fastest
                 // The maximum speed difference is (projectile_step/num)
@@ -230,10 +236,13 @@ int main( void ) {
                 projectile_y = -(projectile_x-projectile_start_x)*(projectile_x-projectile_end_x);
                 projectile_y/=fabs(projectile_end_x-projectile_start_x);
                 projectile_y/=projectile_angle_param;
-                projectile_y+=TANK_Y;
-                // angle = 1 corresponds to shift TANK_Y
-                // angle = 0.5 corresponds to shift by TANK_Y-4
-                // angle = 0.3 corresponds to shift by TANK_Y-8;
+                if(just_fired)
+                {
+                    shift_y = (TANK_Y+PROJECTILE_TANK_Y_DIFF+0.5)-projectile_y;
+                    just_fired = false;
+                    fprintf(stderr,"starting y = %f, shift_y = %f\n",projectile_y, shift_y);
+                }
+                projectile_y+=shift_y;
             }
 
         }
