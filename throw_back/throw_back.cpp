@@ -142,8 +142,9 @@ int main( void ) {
 
     // indicates the state of the projectile (wither loaded in one of the tanks or flying
     bool projectile_flying = false;
-    float projectile_end_x, projectile_midpt_x,projectile_step_x;
+    float projectile_end_x, projectile_start_x, projectile_midpt_x,projectile_step_x;
     float projectile_half_dist_x;
+    float projectile_angle_param=1;// gets more steeper towards 0
 
     do {
 
@@ -175,17 +176,19 @@ int main( void ) {
             if(turn == "right") // switch turns
             {
                 // set projectile end point
-                projectile_end_x = l_tank_x;
+                projectile_start_x = r_tank_x;
+                projectile_end_x = l_tank_x; // setting the end point of the projectile
                 projectile_step_x=-PROJECTILE_STEP;
                 turn = "left";
             }
             else {// left turn
+                projectile_start_x = l_tank_x;
                 projectile_end_x = r_tank_x;
                 projectile_step_x=PROJECTILE_STEP;
                 turn = "right";
             }
-            projectile_midpt_x = (projectile_end_x+projectile_x)/2;
-            projectile_half_dist_x = fabs(projectile_x-projectile_end_x)/2;
+            projectile_midpt_x = (projectile_end_x+projectile_start_x)/2;
+            projectile_half_dist_x = fabs(projectile_start_x-projectile_end_x)/2;
             fprintf(stderr,"projectile x = %f , projectile end x =  %f, circle origin = %f, radius = %f\n",projectile_x,projectile_end_x,projectile_midpt_x,projectile_half_dist_x);
             //fprintf(stderr,"fire pressed\n");
             //sleep(2);// to avoid counting to clicks
@@ -201,6 +204,7 @@ int main( void ) {
         draw_object(BG_vertices, BG_uvs, BG_normals,BG_Texture,TextureID,tmp_view,tmp_model,tmp_light_pos);
 
         // projectile
+        // if the projectile is not flying then attach it to one of the arms of the tanks
         if( !projectile_flying)
         {
             if (turn == "right"){
@@ -223,9 +227,13 @@ int main( void ) {
                 // The speed is linearly adjusted from fastest to lowest then fastest
                 // The maximum speed difference is (projectile_step/num)
                 projectile_x+=projectile_step_x+fabs(projectile_midpt_x-projectile_x)/projectile_half_dist_x*(projectile_step_x/4);
-                projectile_y = -(projectile_x-r_tank_x)*(projectile_x-l_tank_x);
-                projectile_y/=fabs(r_tank_x-l_tank_x);
+                projectile_y = -(projectile_x-projectile_start_x)*(projectile_x-projectile_end_x);
+                projectile_y/=fabs(projectile_end_x-projectile_start_x);
+                projectile_y/=projectile_angle_param;
                 projectile_y+=TANK_Y;
+                // angle = 1 corresponds to shift TANK_Y
+                // angle = 0.5 corresponds to shift by TANK_Y-4
+                // angle = 0.3 corresponds to shift by TANK_Y-8;
             }
 
         }
